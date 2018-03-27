@@ -31,7 +31,7 @@ public final class Cpu {
 	/** general purpose registers */
 	private final int[] register = new int[36];
 	/** coprocessor 0 registers (register+selection*32) */
-	private final int[] cpRegister = new int[64];
+	private final int[] cpRegister = new int[26 + 3 * 32]; // was 64
 	private final CpuStats stats = new CpuStats();
 	private final Memory memory;
 	private final boolean littleEndian;
@@ -975,9 +975,13 @@ public final class Cpu {
 		
 		switch (cpr) {
 			case CPR_STATUS:
+			case CPR_INTCTL:
 			case CPR_PRID:
+			case CPR_EBASE:
 			case CPR_CONFIG:
 			case CPR_CONFIG1:
+			case CPR_CONFIG2:
+			case CPR_CONFIG3:
 			case CPR_CAUSE:
 			case CPR_ENTRYHI:
 			case CPR_WIRED:
@@ -1048,6 +1052,10 @@ public final class Cpu {
 			case CPR_EPC:
 				cpRegister[cpr] = newValue;
 				return;
+			case CPR_EBASE:
+                cpRegister[cpr] = newValue;
+                log.println("WARNING: execCpMoveTo: CPR_EBASE not tested");
+                return;
 			default:
 				throw new RuntimeException("move to unknown cp reg " + cpRegName(rd, sel));
 		}

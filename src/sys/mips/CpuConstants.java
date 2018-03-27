@@ -80,6 +80,8 @@ public final class CpuConstants {
 	public static final int OP_SWL = 0x2a;
 	/** store word */
 	public static final int OP_SW = 0x2b;
+	/** store word EVA */
+    public static final int OP_SWEVA = 0x1f;
 	/** store word right */
 	public static final int OP_SWR = 0x2e;
 	public static final int OP_CACHE = 0x2f;
@@ -414,16 +416,24 @@ public final class CpuConstants {
 	public static final int CPR_COMPARE = 11;
 	/** system coprocessor status register */
 	public static final int CPR_STATUS = 12;
+	/** system coprocessor Interrupt vector setup register (12,1) */
+    public static final int CPR_INTCTL = 12 + (1 * 32);
 	/** system coprocessor cause of most recent exception register */
 	public static final int CPR_CAUSE = 13;
 	/** system coprocessor exception program counter register */
 	public static final int CPR_EPC = 14;
-	/** system coprocessor processor id register */
+	/** system coprocessor product id register */
 	public static final int CPR_PRID = 15;
+	/** system coprocessor EBase register (15, 1) */
+    public static final int CPR_EBASE = 15 + (1 * 32);
 	/** system coprocessor config register */
 	public static final int CPR_CONFIG = 16;
 	/** system coprocessor config1 register (16,1) */
-	public static final int CPR_CONFIG1 = 16 + (1*32);
+	public static final int CPR_CONFIG1 = 16 + (1 * 32);
+	/** system coprocessor config2 register (16,2) */
+    public static final int CPR_CONFIG2 = 16 + (2 * 32);
+    /** system coprocessor config3 register (16,3) */
+    public static final int CPR_CONFIG3 = 16 + (3 * 32);
 	/** system coprocessor load linked physical address register */
 	public static final int CPR_LLADDR = 17;
 	/** system coprocessor watchpoint debug lo register */
