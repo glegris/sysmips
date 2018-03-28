@@ -135,7 +135,8 @@ public class InstructionUtil {
 				if (x == null && cpu != null) {
 					x = formatIsnWithCpu(name, isn, cpu);
 					if (x == null) {
-						throw new RuntimeException(name);
+						sb.append(" FIXME ");
+					    //throw new RuntimeException(name);
 					}
 				}
 				sb.replace(i, j + 1, String.valueOf(x));

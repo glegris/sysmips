@@ -80,8 +80,6 @@ public final class CpuConstants {
 	public static final int OP_SWL = 0x2a;
 	/** store word */
 	public static final int OP_SW = 0x2b;
-	/** store word EVA */
-    public static final int OP_SWEVA = 0x1f;
 	/** store word right */
 	public static final int OP_SWR = 0x2e;
 	public static final int OP_CACHE = 0x2f;
@@ -110,7 +108,8 @@ public final class CpuConstants {
 	
 	/** shift word left logical. also nop if sa,rd,rt = 0 */
 	public static final int FN_SLL = 0x00;
-	public static final int FN_MOVCI = 0x01;
+	/** Move Conditional on Floating Point False */
+	public static final int FN_MOVF = 0x01;
 	/** shift word right logical */
 	public static final int FN_SRL = 0x02;
 	/** shift word right arithmetic (preserve sign) */
@@ -212,6 +211,18 @@ public final class CpuConstants {
 	public static final int FN2_CLZ = 0x20;
 	public static final int FN2_CLO = 0x21;
 	public static final int FN2_SDBBP = 0x3f;
+	
+	
+	//
+    // SPECIAL3 instructions
+    //
+	
+	   /** store word EVA */
+    public static final int FN3_SWE = 0x1f;
+    /** Extract bit field */
+    public static final int FN3_EXT = 0x0;
+    /** Insert bit field */
+    public static final int FN3_INS = 0x4;
 	
 	//
 	// System coprocessor instructions

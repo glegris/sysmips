@@ -55,6 +55,7 @@ public class InstructionSet {
 	private final Instruction[] operation = new Instruction[64];
 	private final Instruction[] function = new Instruction[64];
 	private final Instruction[] function2 = new Instruction[64];
+	private final Instruction[] function3 = new Instruction[64];
 	private final Instruction[] regimm = new Instruction[32];
 	private final Instruction[] systemRs = new Instruction[32];
 	private final Instruction[] systemFn = new Instruction[64];
@@ -136,6 +137,7 @@ public class InstructionSet {
 		addFn(FN_JALR, "jalr", "{rd}, {rs}: {regrs}");
 		addFn(FN_MOVZ, "movz", SF_ZCONDMOV);
 		addFn(FN_MOVN, "movn", SF_ZCONDMOV);
+		addFn(FN_MOVF, "movf", "");
 		addFn(FN_SYSCALL, "syscall", "{syscall}");
 		addFn(FN_BREAK, "break", "{syscall}");
 		addFn(FN_SYNC, "sync", "");
@@ -156,6 +158,7 @@ public class InstructionSet {
 		addFn(FN_NOR, "nor", SF_REG);
 		addFn(FN_SLT, "slt", SF_REG);
 		addFn(FN_SLTU, "sltu", SF_REG);
+		addFn(FN_TEQ, "teq", SF_COND);
 		addFn(FN_TNE, "tne", SF_COND);
 		
 		addFn2(FN2_MADD, "madd", SF_HILOAND);
@@ -166,6 +169,10 @@ public class InstructionSet {
 		addFn2(FN2_CLZ, "clz", SF_REG2);
 		addFn2(FN2_CLO, "clo", "");
 		addFn2(FN2_SDBBP, "sdbbp", "");
+		
+		addFn3(FN3_EXT, "ext", "");
+		addFn3(FN3_INS, "ins", "");
+		addFn3(FN3_SWE, "swe", "");
 		
 		addCop0(CP_RS_MFC0, "mfc0", "{rt} <- {cprd}: {cpregrd}");
 		addCop0(CP_RS_MTC0, "mtc0", "{cprd} <- {rt}: {regrt}");
@@ -229,6 +236,10 @@ public class InstructionSet {
 	private void addFn2 (int fn, String name, String format) {
 		addIsn(new Instruction(OP_SPECIAL2, 0, 0, fn, name, format));
 	}
+	
+	private void addFn3 (int fn, String name, String format) {
+        addIsn(new Instruction(OP_SPECIAL3, 0, 0, fn, name, format));
+    }
 	
 	private void addCop0 (int rs, String name, String format) {
 		addIsn(new Instruction(OP_COP0, rs, 0, 0, name, format));
@@ -294,7 +305,9 @@ public class InstructionSet {
 			case OP_SPECIAL2:
 				set(function2, isn.fn, isn);
 				break;
-				
+			case OP_SPECIAL3:
+                set(function3, isn.fn, isn);
+                break;
 			default:
 				set(operation, isn.op, isn);
 		}
@@ -338,6 +351,8 @@ public class InstructionSet {
 				return fpuFnX[fn];
 			case OP_SPECIAL2:
 				return function2[fn];
+			case OP_SPECIAL3:
+                return function3[fn];
 			default:
 				return operation[op];
 		}

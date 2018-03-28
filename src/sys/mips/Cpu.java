@@ -295,6 +295,11 @@ public final class Cpu {
 					}
 					 */
 					
+					final String name = symbols.getNameAddrOffset(pc);
+                    final String x = InstructionUtil.isnString(pc, isn, symbols, this);
+                    System.out.println("[EXEC] " +  String.format("%-40s %08x %s", name, isn, x));
+
+					
 					// to signal a synchronous exception, either
 					// 1. call execException and return (more efficient)
 					// 2. throw new CpuException (easier in deep call stack)
@@ -522,6 +527,9 @@ public final class Cpu {
 			case OP_SPECIAL2:
 				execFunction2(isn);
 				return;
+			case OP_SPECIAL3:
+                execFunction3(isn);
+                return;
 			case OP_LWC1:
 				fpu.setFpRegister(rt, memory.loadWord(register[rs] + simm));
 				return;
@@ -822,7 +830,13 @@ public final class Cpu {
 		case FN_SYSCALL:
 			// won't this try to re-execute the syscall?
 			// unless linux is smart enough to add 4 to the return address...
-			execException(new CpuExceptionParams(EX_SYSCALL));
+			//execException(new CpuExceptionParams(EX_SYSCALL));
+		    
+		    int syscall = CpuFunctions.syscall(isn);
+		    if (syscall == 1) {
+		        log.println("SYSCALL 1 called (_exit)");
+		    }
+		    execException(new CpuExceptionParams(EX_SYSCALL));
 			return;
 		case FN_BREAK:
 			execException(new CpuExceptionParams(EX_BREAKPOINT));
@@ -904,11 +918,26 @@ public final class Cpu {
 		case FN_SLTU:
 			register[rd] = Integer.compareUnsigned(register[rs], register[rt]) < 0 ? 1 : 0;
 			return;
+		case FN_TEQ:
+            if (register[rs] == register[rt]) {
+                execException(new CpuExceptionParams(EX_TRAP));
+            }
+            return;
 		case FN_TNE:
 			if (register[rs] != register[rt]) {
 				execException(new CpuExceptionParams(EX_TRAP));
 			}
 			return;
+		case FN_TGE:
+            if (register[rs] >= register[rt]) {
+                execException(new CpuExceptionParams(EX_TRAP));
+            }
+            return;
+		case FN_MOVF:
+		    if (fptf(isn) == fccrFcc(fpu.getFpControlReg(), fpcc(isn))) {
+		        register[rd] = register[rs];
+		    }
+            return;
 		default:
 			throw new IllegalArgumentException("invalid fn " + opString(fn));
 		}
@@ -949,6 +978,58 @@ public final class Cpu {
 				throw new RuntimeException("invalid fn2 " + opString(fn));
 		}
 	}
+	
+	private final void execFunction3 (final int isn) {
+        final int rs = rs(isn);
+        final int rt = rt(isn);
+        //final int rd = rd(isn);
+        final int fn = fn(isn);
+        final short simm = simm(isn);
+        
+        switch (fn) {
+            /* See http://nepsweb.co.uk/docs/bitJava.pdf */
+            case FN3_EXT: {
+                int rsValue = register[rs];
+                int msbd = (isn >>> 11) & 0x1F; // size - 1
+                int size = msbd + 1;
+                int lsb  = (isn >>> 6) & 0x1F ; // pos
+                int result = (rsValue >>> lsb) & ((1 << size) - 1);
+                register[rt] = result;
+                log.println("EXT = FIXME !");
+                return;
+            }
+            case FN3_INS: {
+                int rsValue = register[rs];
+                int rtValue = register[rt];
+                int msbd = (isn >>> 11) & 0x1F; // size - 1
+                int size = msbd + 1;
+                int lsb  = (isn >>> 6) & 0x1F ; // pos
+                
+                // FIXME: use widthmask instead of the bit test below : result = ( ~(widthmask << offset) & target ) | ( value << offset );
+                int srcField = rsValue >>> size;
+                for (int i = 0; i < size; i++) {
+                    if ((srcField & 0x1) == 0x1) {
+                        rtValue = rtValue | (1 << (lsb + i));
+                    } else {
+                        rtValue = rtValue & (~(1 << (lsb + i)));
+                    }
+                    srcField = srcField >>> 1;
+                }
+    
+                register[rt] = rtValue;
+                log.println("INS = FIXME !");
+                return;
+               }
+            case FN3_SWE: {
+                memory.storeWord(register[rs] + simm >>> 7, register[rt]);
+                log.println("SWE = FIXME !");
+                return;
+            }
+            default:
+              //throw new RuntimeException("Enhanced Virtual Addressing (EVA) is not supported. Compile with -mno-eva");
+                throw new RuntimeException("Invalid or not implemented SPECIAL3 instruction: " + opString(fn));
+        }
+    }
 	
 	/** execute system coprocessor instruction */
 	private final void execCpRs (final int isn) {
@@ -1036,6 +1117,10 @@ public final class Cpu {
 			case CPR_STATUS:
 				setCpStatus(newValue);
 				return;
+			case CPR_INTCTL:
+			    cpRegister[cpr] = newValue;
+			    log.println("WARNING: execCpMoveTo: CPR_INTCTL not tested");
+			    return;
 			case CPR_CAUSE:
 				setCpCause(newValue);
 				return;
