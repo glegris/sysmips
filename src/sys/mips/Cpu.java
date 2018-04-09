@@ -833,10 +833,50 @@ public final class Cpu {
 			//execException(new CpuExceptionParams(EX_SYSCALL));
 		    
 		    int syscall = CpuFunctions.syscall(isn);
-		    if (syscall == 1) {
-		        log.println("SYSCALL 1 called (_exit)");
+		    if (syscall == 1) { // MIPS UHI
+		        int syscallNumber = register[2];
+		        if (syscallNumber != 1) { // Must also be 1
+		            execException(new CpuExceptionParams(EX_SYSCALL));
+		        }
+		        int operationCode = register[25];
+		        int arg1 = register[4];
+		        int arg2 = register[5];
+		        int arg3 = register[6];
+		        int arg4 = register[7];
+		        log.println("UHI SYSCALL " + operationCode);
+		        
+                switch (operationCode) {
+                case 1: // Exit (FIXME: make a clean exit)
+                    execException(new CpuExceptionParams(EX_SYSCALL));
+                case 5: // long __mips_write (int32_t file, const void *buffer, long count)
+                    int fileDescriptor = arg1;
+                    int bufferAddress = arg2;
+                    int count = arg3;
+                    if (fileDescriptor == 1 || fileDescriptor == 2) {
+                        StringBuffer sb = new StringBuffer(count);
+                        sb.append("[CONSOLE] ");
+                        for (int i = 0; i < count; i++) {
+                            sb.append((char) memory.loadByte(bufferAddress + i));
+                        }
+                        System.out.println(sb.toString());
+                    } else {
+                        log.println("Unknown file descriptor");
+                    }
+                    // Return number of bytes written
+                    register[2] = count;
+                    break;
+//                case 13: // Plog (a limited form of printf)
+//                    log.println("UHI SYSCALL " + operationCode + " (Plog)");
+//                    break;
+                default:
+                    log.println("Unknown UHI SYSCALL: " + operationCode);
+                    execException(new CpuExceptionParams(EX_SYSCALL));
+                }
+		    } else {
+		        log.println("Not a UHI SYSCALL:  " + syscall);
+		        execException(new CpuExceptionParams(EX_SYSCALL));
 		    }
-		    execException(new CpuExceptionParams(EX_SYSCALL));
+		    
 			return;
 		case FN_BREAK:
 			execException(new CpuExceptionParams(EX_BREAKPOINT));
