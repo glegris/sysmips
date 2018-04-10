@@ -1,7 +1,30 @@
 package sys.mips;
 
+import static sys.mips.CpuConstants.*;
+import static sys.mips.CpuFunctions.ZX_INT_MASK;
+import static sys.mips.CpuFunctions.branch;
+import static sys.mips.CpuFunctions.fccrFcc;
+import static sys.mips.CpuFunctions.fn;
+import static sys.mips.CpuFunctions.fpcc;
+import static sys.mips.CpuFunctions.fptf;
+import static sys.mips.CpuFunctions.jump;
+import static sys.mips.CpuFunctions.op;
+import static sys.mips.CpuFunctions.random;
+import static sys.mips.CpuFunctions.rd;
+import static sys.mips.CpuFunctions.rs;
+import static sys.mips.CpuFunctions.rt;
+import static sys.mips.CpuFunctions.sa;
+import static sys.mips.CpuFunctions.sel;
+import static sys.mips.CpuFunctions.simm;
+import static sys.mips.CpuFunctions.vpn2;
+import static sys.mips.InstructionUtil.cpRegName;
+import static sys.mips.InstructionUtil.opString;
+
 import java.beans.PropertyChangeSupport;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -10,10 +33,6 @@ import sys.malta.MaltaUtil;
 import sys.util.Log;
 import sys.util.Logger;
 import sys.util.Symbols;
-
-import static sys.mips.CpuConstants.*;
-import static sys.mips.CpuFunctions.*;
-import static sys.mips.InstructionUtil.*;
 
 /**
  * a mips cpu
@@ -222,6 +241,21 @@ public final class Cpu {
 		}
 	}
 	
+	private final StringBuilder consoleSb = new StringBuilder(160);
+	
+	private void writeConsole (final byte value) {
+        if (value >= 32 || value == '\n') {
+            consoleSb.append((char) value);
+        } else if (value != '\r') {
+            consoleSb.append("{" + Integer.toHexString(value & 0xff) + "}");
+        }
+        if (value == '\n' || consoleSb.length() > 160) {
+            final String line = consoleSb.toString();
+            getSupport().firePropertyChange("console", null, line);
+            consoleSb.delete(0, consoleSb.length());
+        }
+    }
+	
 	/** never returns, throws runtime exception... */
 	public final void run () {
 		stats.startTimeNs = System.nanoTime();
@@ -311,6 +345,9 @@ public final class Cpu {
 				} catch (CpuException e) {
 					log.println("caught " + e);
 					execException(e.ep);
+				} catch (ExitException e) {
+				    log.println("exiting... ");
+				    break;
 				}
 				
 				//if (countIsns) {
@@ -847,18 +884,16 @@ public final class Cpu {
 		        
                 switch (operationCode) {
                 case 1: // Exit (FIXME: make a clean exit)
-                    execException(new CpuExceptionParams(EX_SYSCALL));
+                    throw new ExitException();
+                    //execException(new CpuExceptionParams(EX_SYSCALL));
                 case 5: // long __mips_write (int32_t file, const void *buffer, long count)
                     int fileDescriptor = arg1;
                     int bufferAddress = arg2;
                     int count = arg3;
                     if (fileDescriptor == 1 || fileDescriptor == 2) {
-                        StringBuffer sb = new StringBuffer(count);
-                        sb.append("[CONSOLE] ");
                         for (int i = 0; i < count; i++) {
-                            sb.append((char) memory.loadByte(bufferAddress + i));
+                            writeConsole(memory.loadByte(bufferAddress + i));
                         }
-                        System.out.println(sb.toString());
                     } else {
                         log.println("Unknown file descriptor");
                     }
